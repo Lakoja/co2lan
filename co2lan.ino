@@ -2,7 +2,7 @@
 #include <EEPROM.h>
 
 #define D2 4
-#define DC_GAIN (8.5)   //define the DC gain of amplifier
+#define DC_GAIN (8.5) //define the DC gain of amplifier
 
 //These two values differ from sensor to sensor. user should derermine this value.
 //#define ZERO_POINT_VOLTAGE (3.09 / DC_GAIN) //define the output of the sensor in volts when the concentration of CO2 is 400PPM
@@ -53,7 +53,8 @@ void setup()
   EEPROM.end();
 
   // Adapt parameters if needed
-  //*
+  //   Formula for function plotter (10^((x/8.5-3.4/8.5)*(2.602-3)/(0.4/8.5)+2.602))
+  /*
   EEPROM.begin(sizeof (UnitData));
   systemData.volt400 = 3.08;
   systemData.volt1000 = 2.78;
@@ -99,10 +100,12 @@ void loop()
 
     WiFi.forceSleepWake();
 
-    char transBuffer2[30];
-    sprintf(transBuffer2, "PPM %d %d", (int)((ppm + lastPpm) / 2), ESP.getChipId());
+    /* Only needed if there is no connection (wrong environment)
+    char debugBuffer[30];
+    sprintf(debugBuffer, "PPM %d %d %dV\n", (int)((ppm + lastPpm) / 2), ESP.getChipId(), (int)(volts * DC_GAIN  * 100 + 0.5));
 
-    Serial.println(transBuffer2);
+    Serial.println(debugBuffer);
+    */
 
     WiFi.begin(systemData.SSID, systemData.pass);
 
@@ -126,16 +129,12 @@ void loop()
         Serial.print("Server connect failed.. ");
       } else {
         Serial.println("Server connected ");
-        //Serial.println(millis() - connectStart);
-
         char transBuffer[30];
-        sprintf(transBuffer, "PPM %d %d", (int)((ppm + lastPpm) / 2), ESP.getChipId());
+        sprintf(transBuffer, "PPM %d %d %dV\n", (int)((ppm + lastPpm) / 2), ESP.getChipId(), (int)(volts * DC_GAIN * 100 + 0.5));
 
-        Serial.println(transBuffer);
+        Serial.print(transBuffer);
         
-        client.println(transBuffer);
-
-        
+        client.print(transBuffer);
       }
     }
 
