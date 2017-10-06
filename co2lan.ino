@@ -53,11 +53,12 @@ void setup()
   EEPROM.end();
 
   // Adapt parameters if needed
-  //   Formula for function plotter (10^((x/8.5-3.4/8.5)*(2.602-3)/(0.4/8.5)+2.602))
+  //   Formulas for function plotter 10^((x/8.5-3.35/8.5)*(2.602-3)/((3.35-3.13)/8.5)+2.602)
+  //    10^((x/8.5-3.12/8.5)*(2.602-3)/((3.12-2.91)/8.5)+2.602)
   /*
   EEPROM.begin(sizeof (UnitData));
-  systemData.volt400 = 3.08;
-  systemData.volt1000 = 2.78;
+  systemData.volt400 = 3.12;
+  systemData.volt1000 = 2.91;
   EEPROM.put(0, systemData);
   EEPROM.end();
   //*/
