@@ -30,6 +30,9 @@ public:
 
 UnitData systemData;
 
+bool USE_INFRA = true;
+unsigned long LOOP_DELAY = 30000;
+
 void setup()
 {
   Serial.begin(115200);
@@ -53,7 +56,7 @@ void setup()
   EEPROM.end();
 
   // Adapt parameters if needed
-  //*
+  /*
   EEPROM.begin(sizeof (UnitData));
   systemData.volt400 = 3.08;
   systemData.volt1000 = 2.78;
@@ -73,14 +76,20 @@ void loop()
   float volts = (volts1 + volts2 + volts3) / 3.0;
   Serial.print(volts); 
   Serial.print( "V / " );
-  volts = volts / DC_GAIN;
-  Serial.print(volts, 3); 
-  Serial.print( "V " );
 
-  float delta = systemData.volt400 / DC_GAIN - systemData.volt1000 / DC_GAIN;
-  float logHighReference = 3; // 3 for 1000 or 2.903 for 800
-  float logCo2 = (volts - systemData.volt400 / DC_GAIN) * (2.602 - logHighReference) / delta + 2.602;
-  float ppm = pow(10, logCo2);
+  float ppm = -1;
+  if (USE_INFRA) {
+    ppm = volts * 1000;
+  } else {
+    volts = volts / DC_GAIN;
+    Serial.print(volts, 3); 
+    Serial.print( "V " );
+  
+    float delta = systemData.volt400 / DC_GAIN - systemData.volt1000 / DC_GAIN;
+    float logHighReference = 3; // 3 for 1000 or 2.903 for 800
+    float logCo2 = (volts - systemData.volt400 / DC_GAIN) * (2.602 - logHighReference) / delta + 2.602;
+    ppm = pow(10, logCo2);
+  }
 
   Serial.print("  CO2: ");
   Serial.print(ppm);
@@ -89,7 +98,7 @@ void loop()
   Serial.print( "  Time point: " );
   Serial.print(millis() / 60000.0);
   Serial.print("m  ");
-  Serial.print(digitalRead(D2));
+  //Serial.print(digitalRead(D2));
   Serial.println();
 
   unsigned long now = millis();
@@ -146,5 +155,5 @@ void loop()
     lastPpm = ppm;
   }
   
-  delay(30000);
+  delay(LOOP_DELAY);
 }
