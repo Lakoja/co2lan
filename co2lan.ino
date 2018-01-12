@@ -78,15 +78,18 @@ void loop()
   float voltsRaw = (volts1 + volts2 + volts3) / 3.0;
   float volts = voltsRaw;
   Serial.print(volts); 
-  Serial.print( "V / " );
+  Serial.print("V (");
+  Serial.print(volts1);
+  Serial.print("V) ");
 
   float ppm = -1;
   if (USE_INFRA) {
     ppm = volts * 1000;
+    ppm = ppm * (1 + ppm / 1000);
   } else {
     volts = volts / DC_GAIN;
     Serial.print(volts, 3); 
-    Serial.print( "V " );
+    Serial.print("V ");
   
     float delta = systemData.volt400 / DC_GAIN - systemData.volt1000 / DC_GAIN;
     float logHighReference = 3; // 3 for 1000 or 2.903 for 800
@@ -94,13 +97,13 @@ void loop()
     ppm = pow(10, logCo2);
   }
 
-  Serial.print("  CO2: ");
+  Serial.print("CO2: ");
   Serial.print(ppm);
-  Serial.print("ppm");
+  Serial.print("ppm ");
   
-  Serial.print( "  Time point: " );
+  Serial.print("Time point: ");
   Serial.print(millis() / 60000.0);
-  Serial.print("m  ");
+  Serial.print("m ");
   //Serial.print(digitalRead(D2));
   Serial.println();
 
@@ -111,19 +114,20 @@ void loop()
 
     WiFi.forceSleepWake();
 
-    /* Only needed if there is no connection (wrong environment)
-    char debugBuffer[30];
-    sprintf(debugBuffer, "PPM %d %d %dV\n", (int)((ppm + lastPpm) / 2), ESP.getChipId(), (int)(volts * DC_GAIN  * 100 + 0.5));
-
-    Serial.println(debugBuffer);
-    */
-
     WiFi.begin(systemData.SSID, systemData.pass);
 
     unsigned long connectStart = millis();
     while (WiFi.status() != WL_CONNECTED) {
       if (millis() - connectStart > connectTryThreshold) {
         Serial.println("Wifi connect failed (timeout)");
+
+        /* Only needed if there is no connection (wrong environment)
+        char transBuffer[30];
+        sprintf(transBuffer, "PPM %d %d %dV\n", (int)((ppm + lastPpm) / 2), ESP.getChipId(), (int)(voltsRaw * 100 + 0.5));
+
+        Serial.print(transBuffer);
+        */
+        
         break;
       }
       delay(10);
