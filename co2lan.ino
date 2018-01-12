@@ -75,7 +75,8 @@ void loop()
   float volts2 = analogRead(A0) / 1023.0 * 3.3;
   delay(25);
   float volts3 = analogRead(A0) / 1023.0 * 3.3;
-  float volts = (volts1 + volts2 + volts3) / 3.0;
+  float voltsRaw = (volts1 + volts2 + volts3) / 3.0;
+  float volts = voltsRaw;
   Serial.print(volts); 
   Serial.print( "V / " );
 
@@ -140,7 +141,7 @@ void loop()
       } else {
         Serial.println("Server connected ");
         char transBuffer[30];
-        sprintf(transBuffer, "PPM %d %d %dV\n", (int)((ppm + lastPpm) / 2), ESP.getChipId(), (int)(volts * DC_GAIN * 100 + 0.5));
+        sprintf(transBuffer, "PPM %d %d %dV\n", (int)((ppm + lastPpm) / 2), ESP.getChipId(), (int)(voltsRaw * 100 + 0.5));
 
         Serial.print(transBuffer);
         
