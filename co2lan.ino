@@ -1,8 +1,13 @@
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>
 
-#define D2 4
 #define DC_GAIN (8.5) //define the DC gain of amplifier
+#define D3 0
+#define D4 2
+#define D7 13
+#define D8 15
+#define D5 14
+#define D6 12
 
 //These two values differ from sensor to sensor. user should derermine this value.
 //#define ZERO_POINT_VOLTAGE (3.09 / DC_GAIN) //define the output of the sensor in volts when the concentration of CO2 is 400PPM
@@ -30,13 +35,26 @@ public:
 
 UnitData systemData;
 
-bool USE_INFRA = true;
+bool USE_INFRA = false;
+bool INFRA_WITH_CORRECTION = true;
 unsigned long LOOP_DELAY = 30000;
+
+bool USE_UART = true;
+
+byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
+char response[9];
+
+#include <SoftwareSerial.h>
+
+const int RX_PIN = D5;
+const int TX_PIN = D6;
+const int BAUD_RATE = 9600;
+
+SoftwareSerial sensorUart(RX_PIN, TX_PIN);
 
 void setup()
 {
   Serial.begin(115200);
-  pinMode(D2, INPUT_PULLUP);
 
   Serial.print("Chip id ");
   Serial.println(ESP.getChipId());
@@ -65,6 +83,10 @@ void setup()
   EEPROM.put(0, systemData);
   EEPROM.end();
   //*/
+
+  if (USE_UART) {
+    sensorUart.begin(BAUD_RATE);
+  }
 }
 
 void loop()
@@ -78,14 +100,28 @@ void loop()
   float voltsRaw = (volts1 + volts2 + volts3) / 3.0;
   float volts = voltsRaw;
   Serial.print(volts); 
-  Serial.print("V (");
-  Serial.print(volts1);
+  Serial.print("V (C");
+  Serial.print(volts2);
   Serial.print("V) ");
 
   float ppm = -1;
-  if (USE_INFRA) {
+  if (USE_UART) {
+    sensorUart.write(cmd, 9);
+    sensorUart.readBytes(response, 9);
+
+    if (0xff == response[0] && 0x86 == response[1]) {
+      int responseHigh = (int) response[2];
+      int responseLow = (int) response[3];
+      ppm = (256 * responseHigh) + responseLow;
+    } else {
+      ppm = 100;
+    }
+  } else if (USE_INFRA) {
     ppm = volts * 1000;
-    ppm = ppm * (1 + ppm / 1000);
+
+    if (INFRA_WITH_CORRECTION) {
+      ppm = ppm * (1 + ppm / 1250);
+    }
   } else {
     volts = volts / DC_GAIN;
     Serial.print(volts, 3); 
@@ -104,7 +140,6 @@ void loop()
   Serial.print("Time point: ");
   Serial.print(millis() / 60000.0);
   Serial.print("m ");
-  //Serial.print(digitalRead(D2));
   Serial.println();
 
   unsigned long now = millis();
